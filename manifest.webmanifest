@@ -1,0 +1,23 @@
+{
+  "name": "PatchMaster \u2014 Live Set Engine",
+  "short_name": "PatchMaster",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0B0D10",
+  "theme_color": "#0B0D10",
+  "description": "Song-to-patch mapping, splits, scenes and live sets for Yamaha MODX/MONTAGE and Korg keyboards.",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
