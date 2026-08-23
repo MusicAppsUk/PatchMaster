@@ -1,0 +1,203 @@
+/* patchmaster-theme.css
+   ===========================================================================
+   PatchMaster — visual identity, derived from Keymaster Pro's "low-light
+   practice room" palette (ebony / ivory / brass), extended with PatchMaster's
+   own semantic layer for hardware safety and sound-map trust.
+
+   Shared with Keymaster Pro (Music Apps UK family identity):
+     ebony surfaces, ivory text, brass accent, Fraunces/Inter/IBM Plex Mono.
+
+   NOT shared — deliberately different, because the meaning is different:
+     Keymaster Pro's rose/felt = gentle correction for a learner mid-lesson.
+     PatchMaster's red = a hardware safety block. A wrong note is a nuisance;
+     a wrong Program Change at a gig is the product failing at its one job.
+     Softening that colour to spare feelings would blur a signal that exists
+     to protect the player's instrument and gig. So PatchMaster keeps brass
+     for trust/warmth and adds a true, unambiguous red for "will not send."
+   ========================================================================= */
+
+:root {
+  /* ---- Surfaces (shared with Keymaster Pro) ---- */
+  --ebony:        #14131A;
+  --ebony-raise:  #1E1C26;
+  --ebony-sink:   #0F0E14;
+  --ebony-edge:   #2A2833;
+  --ebony-edge-2: #3A3747;
+
+  /* ---- Ivory (text) — shared ---- */
+  --ivory:        #F4EFE6;
+  --ivory-dim:    #B9B2A6;
+  --ivory-faint:  #7E7A72;
+
+  /* ---- Brass (the light) — shared. PatchMaster's primary accent:
+     Send, Play, "Verified", active states. ---- */
+  --brass:        #C99A4B;
+  --brass-bright: #E8C57E;
+  --brass-deep:   #9A7330;
+  --brass-glow:   rgba(232, 197, 126, 0.35);
+
+  /* ---- PatchMaster semantic layer (not in Keymaster Pro) ---- */
+
+  /* Trust ladder for sound-map status — reuses brass/emerald/amber from the
+     shared vocabulary so a Music Apps UK product always "speaks" the same
+     way, but the meaning here is verification, not lesson feedback. */
+  --verified:      #46C08A;                      /* ✓ Verified — confirmed on this model */
+  --verified-glow: rgba(70, 192, 138, 0.40);
+  --close-match:   #E0A94B;                      /* ≈ Close Match — best guess, unverified */
+  --close-match-glow: rgba(224, 169, 75, 0.35);
+  --needs-look:    #D98A92;                      /* ? Needs a Look — unresolved, needs a decision */
+  --needs-look-glow: rgba(217, 138, 146, 0.30);
+  --your-choice:   #B9B2A6;                      /* + Your Choice — player set manually (neutral, not a status) */
+
+  /* Hardware safety — deliberately NOT the soft rose above. This is a hard
+     stop, not a nudge, so it must read unmistakably as "no", even glanced
+     at across a stage in low light. Kept desaturated-dark rather than pure
+     #FF0000 so it doesn't fight the brass accent for attention when idle. */
+  --blocked:        #C4362E;   /* inactive / blocked controls, selection screen */
+  --blocked-bright: #E8493D;   /* hover / active-press state on a blocked control */
+  --blocked-glow:   rgba(232, 73, 61, 0.35);
+
+  /* ---- Type — shared ---- */
+  --font-display: 'Fraunces', Georgia, 'Times New Roman', serif;
+  --font-ui: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', 'Cascadia Mono', monospace;
+
+  --step-xs:  0.75rem;
+  --step-sm:  0.875rem;
+  --step-md:  1rem;
+  --step-lg:  1.333rem;
+  --step-xl:  1.953rem;
+  --step-2xl: 3.052rem;
+
+  --gap-1: 0.25rem; --gap-2: 0.5rem; --gap-3: 0.75rem;
+  --gap-4: 1rem;    --gap-6: 1.5rem; --gap-8: 2rem;
+  --radius-sm: 6px; --radius-md: 10px; --radius-lg: 16px;
+
+  --ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --dur: 0.24s;
+  color-scheme: dark;
+}
+
+/* ---------------------------------------------------------------------------
+   Player-facing badges (SEARCH → RESEARCH → BUILD → SEND → PLAY)
+   One symbol, one word, brass/ivory chrome. Tapping reveals the fuller
+   sentence — nothing more is on screen by default. No error text, no
+   SysEx language, no model-detection strings ever appear here.
+   ------------------------------------------------------------------------- */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-family: var(--font-mono);
+  font-size: var(--step-xs);
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  border: 1px solid currentColor;
+  background: color-mix(in srgb, var(--ebony-sink) 70%, transparent);
+}
+
+.badge--verified {
+  color: var(--verified);
+  box-shadow: 0 0 0 0 transparent;
+}
+.badge--close-match { color: var(--close-match); }
+.badge--needs-look   { color: var(--needs-look); }
+.badge--your-choice  { color: var(--your-choice); }
+
+/* Tooltip / expanded text, shown only on tap — keeps the default view calm. */
+.badge__detail {
+  display: none;
+  margin-top: 4px;
+  font-family: var(--font-ui);
+  font-size: var(--step-sm);
+  color: var(--ivory-dim);
+  font-weight: 400;
+  letter-spacing: normal;
+}
+.badge.is-expanded .badge__detail { display: block; }
+
+/* ---------------------------------------------------------------------------
+   Hardware-safety button state — the selection-page "not active / blocked"
+   control Tim asked for. True red, not the gentle Keymaster Pro rose,
+   because this means "PatchMaster will not send to this instrument", a
+   different class of message than "try that note again".
+   ------------------------------------------------------------------------- */
+.btn--blocked {
+  appearance: none;
+  border: 1px solid var(--blocked);
+  background: color-mix(in srgb, var(--blocked) 14%, var(--ebony-raise));
+  color: var(--blocked-bright);
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  font-size: var(--step-sm);
+  font-weight: 600;
+  cursor: not-allowed;
+  opacity: 0.85;
+}
+.btn--blocked:hover {
+  border-color: var(--blocked-bright);
+  box-shadow: 0 0 0 3px var(--blocked-glow);
+}
+/* Reserve pure alarm-red only for this state — it must never appear
+   anywhere else in the UI, or it stops meaning "blocked". */
+
+/* ---------------------------------------------------------------------------
+   Send / Play — the two actions that matter most, brass, unmissable.
+   ------------------------------------------------------------------------- */
+.btn--primary {
+  appearance: none;
+  border: 0;
+  border-radius: var(--radius-md);
+  padding: 14px 28px;
+  font-family: var(--font-ui);
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: #1a1206;
+  background: linear-gradient(135deg, var(--brass-bright), var(--brass) 70%, var(--brass-deep));
+  box-shadow: 0 10px 26px -8px var(--brass-glow), inset 0 1px 0 rgba(255,255,255,0.35);
+  cursor: pointer;
+  transition: transform var(--dur) var(--ease), filter var(--dur) var(--ease);
+}
+.btn--primary:hover { transform: translateY(-1px); filter: brightness(1.05); }
+
+/* ---------------------------------------------------------------------------
+   Developer tab — separated, not hidden. Distinct "workshop" treatment:
+   cooler, more technical (mono type, tighter chrome, a visible warning
+   rail) so it never gets mistaken for a player-facing screen even at a
+   glance. This is where SysEx addresses, allow-list refusals, model bytes
+   and Link report output live.
+   ------------------------------------------------------------------------- */
+.dev-tab {
+  background: var(--ebony-sink);
+  border: 1px solid var(--ebony-edge);
+  border-left: 3px solid var(--blocked);
+  border-radius: var(--radius-md);
+  padding: var(--gap-4) var(--gap-6);
+  font-family: var(--font-mono);
+  font-size: var(--step-sm);
+  color: var(--ivory-dim);
+}
+.dev-tab__warning {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--gap-2);
+  margin-bottom: var(--gap-4);
+  padding: var(--gap-3);
+  border: 1px solid color-mix(in srgb, var(--blocked) 45%, var(--ebony-edge));
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--blocked) 8%, transparent);
+  color: var(--blocked-bright);
+  font-family: var(--font-ui);
+  font-size: var(--step-sm);
+  font-weight: 500;
+  line-height: 1.5;
+}
+.dev-tab__label {
+  font-family: var(--font-mono);
+  font-size: var(--step-xs);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ivory-faint);
+}
