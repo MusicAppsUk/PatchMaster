@@ -70,7 +70,7 @@ async function NC(e){
  let find=r=>(r||[]).find(c=>c.addr.length===4&&c.addr[0]===6&&c.addr[1]===0&&c.addr[2]===0&&c.addr[3]===0);
  let n=find(a.chunks);
  if(!n||!n.payload||n.payload.length<20)return{note:"Name record [06 00 00 00] not found or too short in the dump \u2014 screenshot this, then try again (the link is occasionally slow on the first dump of a session).",ok:!1};
- let offsets=[0,10,19],results=[];
+ let offsets=[19,0,10],results=[];
  for(let off of offsets){
   let d=await _.dumpEditBuffer(e),nd=find(d.chunks);
   if(!nd||!nd.payload||nd.payload.length<20){results.push(`+${off}: dump lost mid-test \u2014 stopping here, screenshot this`);break}
