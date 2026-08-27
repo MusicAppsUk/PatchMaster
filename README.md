@@ -1,12 +1,12 @@
-# PatchMaster v19.1 — Cleanup / Stabilisation
+# PatchMaster v19.2 — Signature Instrument Correction
 
 PatchMaster is a musician-facing Yamaha performance builder. Its governing workflow is:
 
 **SEARCH → RESEARCH → BUILD → SEND → PLAY**
 
-This build is deliberately a stabilisation release. It does not broaden the product promise or add speculative controller features.
+v19.2 carries forward the v19.1 stabilisation work and adds the first signature-instrument research correction. It does not add speculative controller features.
 
-## v19.1 changes
+## v19.1 stabilisation carried forward
 
 - Preserved the existing MIDI safety gate, Yamaha identity/dialect detection and "degrade, never guess" behaviour.
 - Removed the destructive startup behaviour that unregistered service workers and deleted caches every time the app opened.
@@ -27,7 +27,7 @@ Do not weaken these areas without an explicit, reviewed reason:
 4. **Bulk/unsafe writes remain blocked** unless specifically allow-listed.
 5. **Research evidence and sound-map authority remain separate concerns.** A plausible sound name is not permission to send an unverified program mapping.
 
-## Known work after v19.1
+## Known work after v19.2
 
 These are intentionally *not* silently solved in this stabilisation build:
 
@@ -40,7 +40,7 @@ These are intentionally *not* silently solved in this stabilisation build:
 
 ## Release discipline
 
-v19.0 is the frozen baseline for this cleanup. v19.1 should be treated as a controlled stabilisation build. Feature requests discovered during stabilisation belong in a later build unless they are required to correct safety, integrity or a broken core workflow.
+v19.0 remains the frozen pre-stabilisation baseline. v19.1 is the stabilisation baseline. v19.2 is the signature-instrument correction build described below. Future feature requests should remain separate unless required to correct safety, integrity or a broken core workflow.
 
 ## v19.2 — signature-instrument research correction
 
