@@ -41,3 +41,11 @@ These are intentionally *not* silently solved in this stabilisation build:
 ## Release discipline
 
 v19.0 is the frozen baseline for this cleanup. v19.1 should be treated as a controlled stabilisation build. Feature requests discovered during stabilisation belong in a later build unless they are required to correct safety, integrity or a broken core workflow.
+
+## v19.2 — signature-instrument research correction
+
+- Added a verified MODX M `Penny Whistle` sound entry (preset #631; MSB 63 / LSB 4 / PC 118).
+- Research now recognises tin whistle / pennywhistle / whistle evidence before generic flute matching.
+- Added an explicit *My Heart Will Go On* signature-arrangement guardrail so its iconic whistle cannot disappear behind a generic ballad rig when source parsing is incomplete.
+- Added tin-whistle musician-role labelling and search semantics.
+- MIDI safety, identity detection, SysEx allow-lists and the v19.1 PWA stabilisation remain unchanged.
