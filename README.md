@@ -1,4 +1,4 @@
-# PatchMaster v19.2 — Signature Instrument Correction
+# PatchMaster v19.2.1 — Signature Instrument Correction
 
 PatchMaster is a musician-facing Yamaha performance builder. Its governing workflow is:
 
@@ -49,3 +49,9 @@ v19.0 remains the frozen pre-stabilisation baseline. v19.1 is the stabilisation 
 - Added an explicit *My Heart Will Go On* signature-arrangement guardrail so its iconic whistle cannot disappear behind a generic ballad rig when source parsing is incomplete.
 - Added tin-whistle musician-role labelling and search semantics.
 - MIDI safety, identity detection, SysEx allow-lists and the v19.1 PWA stabilisation remain unchanged.
+
+
+## v19.2.1 MIDI recovery
+- Restores automatic Web MIDI reconnection when a previously selected MIDI port is stored, including browsers where the Permissions API MIDI query is unavailable or unreliable.
+- Preserves the existing manual Connect path, SysEx fallback, port selection, Yamaha detection, and PM_ALLOW safety gate.
+- No research or patch-mapping changes from v19.2.
