@@ -1,4 +1,4 @@
-const CACHE = "patchmaster-v19.2.1";
+const CACHE = "patchmaster-v19.2.2";
 const SHELL = ["./manifest.webmanifest", "./icon-192.png", "./icon-512.png"];
 
 self.addEventListener("install", (event) => {

@@ -1,10 +1,10 @@
-# PatchMaster v19.2.1 — Signature Instrument Correction
+# PatchMaster v19.2.2 — MODX M Sound Map Correction
 
 PatchMaster is a musician-facing Yamaha performance builder. Its governing workflow is:
 
 **SEARCH → RESEARCH → BUILD → SEND → PLAY**
 
-v19.2 carries forward the v19.1 stabilisation work and adds the first signature-instrument research correction. It does not add speculative controller features.
+v19.2.2 carries forward the v19.1 stabilisation work and adds the first signature-instrument research correction. It does not add speculative controller features.
 
 ## v19.1 stabilisation carried forward
 
@@ -55,3 +55,12 @@ v19.0 remains the frozen pre-stabilisation baseline. v19.1 is the stabilisation 
 - Restores automatic Web MIDI reconnection when a previously selected MIDI port is stored, including browsers where the Permissions API MIDI query is unavailable or unreliable.
 - Preserves the existing manual Connect path, SysEx fallback, port selection, Yamaha detection, and PM_ALLOW safety gate.
 - No research or patch-mapping changes from v19.2.
+
+
+## v19.2.2 — MODX M sound-map correction
+
+- Corrected `Penny Whistle` from the invalid derived address MSB 63 / LSB 4 / Program 118 to MSB 63 / LSB 3 / Program 16.
+- Reason: MODX M Performance-list number 631 is a catalogue position, not the Single-Part preset-bank ordinal. Treating it as the latter selected the wrong sound.
+- Yamaha's MIDI Data Table defines Single-Part Preset banks as MSB 63 with LSB selecting Preset bank and Program 0–127. The legacy Yamaha MODX mapping places Penny Whistle at Bank 63/3 Program 16; MODX M retains compatibility with the MONTAGE/MODX family sound data.
+- MIDI connection/recovery logic from v19.2.1 is unchanged.
+- This release intentionally corrects the proven whistle failure first. The remaining MODX M catalogue-position-derived mappings are flagged for systematic authoritative remapping rather than silently claiming the catalogue arithmetic is authoritative.
