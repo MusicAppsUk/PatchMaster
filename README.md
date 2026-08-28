@@ -1,4 +1,4 @@
-# PatchMaster v19.2.4 — Yamaha MIDI Selection Foundation
+# PatchMaster v19.2.5 — Signature Instrument Correction
 
 PatchMaster is a musician-facing Yamaha performance builder. Its governing workflow is:
 
@@ -51,22 +51,25 @@ v19.0 remains the frozen pre-stabilisation baseline. v19.1 is the stabilisation 
 - MIDI safety, identity detection, SysEx allow-lists and the v19.1 PWA stabilisation remain unchanged.
 
 
-## v19.2.1 MIDI recovery
+## v19.2.5 MIDI recovery
 - Restores automatic Web MIDI reconnection when a previously selected MIDI port is stored, including browsers where the Permissions API MIDI query is unavailable or unreliable.
 - Preserves the existing manual Connect path, SysEx fallback, port selection, Yamaha detection, and PM_ALLOW safety gate.
 - No research or patch-mapping changes from v19.2.
 
-## v19.2.4 — Yamaha MIDI selection foundation
 
-This build keeps the v19.2.1 MIDI recovery path intact and corrects the send sequencing rather than inventing new patch numbers.
+## v19.2.5 — Yamaha Multi/GM foundation
+- Branches from known-good v19.2.1 MIDI recovery baseline.
+- Before constructing an M-series song Performance, sends the documented universal GM System On message to recall Yamaha Multi/GM, activating all 16 Part slots. This fixes the architectural error where Program Change could replace an existing Part but could not create an empty Part.
+- Waits 350 ms after reset (Yamaha guidance: GM setup data follows 150–300 ms later), then sends each Part's MSB, LSB and Program Change in order with settling time after Program Change.
+- Keeps the existing verified M-series name-stamp path, so the resulting edit buffer is renamed to the song after construction.
+- Does not alter v19.2.1 MIDI reconnect/identity logic or bulk-write safety gate.
+- Important: MSB 63 selects Part 1 of the referenced factory Performance into the addressed Part. Multi-Part donor Performances therefore contribute Part 1 only; they are not silently treated as a complete multi-Part instrument.
 
-Authoritative basis:
-- MODX M Data List: MSB 63 selects Performance (Single Part); LSB selects Preset bank; Program 0–127 selects the program. Bank Select is executed when Program Change is received; unsupported combinations are ignored.
-- Yamaha guidance: MSB/LSB must precede Program Change.
-- YamahaSynth field diagnosis documents multi-channel Bank/Program bursts arriving too quickly; staggering each channel by 50 ms resolves the wrong-Part problem. PatchMaster uses an 80 ms post-Program-Change guard plus 6 ms between other messages.
-- MODX M current Performance numbering remains the source for the MODX M preset arithmetic. Do not substitute legacy MODX catalogue positions for MODX M positions.
-
-Regression target for My Heart Will Go On:
-Classic Mini Bass; All 9 Bars!; CFX Concert; Warm Pad; Seattle Sections; Clean Fingers; Penny Whistle.
-
-Protected: PM_ALLOW, identity/dialect detection, SysEx safety, and the v19.2.1 reconnect path are unchanged.
+## v19.2.6 — verified single-Part foundation
+- Stops treating every MODX M Performance-list row as a verified one-Part MIDI voice.
+- Dynamic catalogue arithmetic is lookup-only and cannot transmit until Single-Part status is verified.
+- Known Multi-Part presets CFX Concert, All 9 Bars!, and Seattle Sections are blocked from one-slot insertion.
+- My Heart Will Go On signature uses Penny Whistle plus single-Part CFX Stage and Seattle Violins 1 support.
+- Factory mappings take precedence over stale learned mappings.
+- Keeps the v19.2.1 MIDI recovery path and v19.2.5 Multi/GM slot activation.
+- After sending on M-series, PatchMaster now reads back Part Name blocks 1–8 from the edit buffer and records a hardware receipt; it no longer relies only on the outbound MIDI log.
