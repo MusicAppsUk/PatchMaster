@@ -1,0 +1,2 @@
+PatchMaster v19.1 deployment package
+Upload index.html using the normal PatchMaster deployment process, replacing the existing deployed index.html.
