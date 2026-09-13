@@ -1,21 +1,13 @@
-PatchMaster v21.9 — PLAYABLE SEND HARDENING — 13 Sep 2026
+PatchMaster v21.11 — STABLE REBUILD — 13 Sep 2026
 
-Release-blocking fixes made from the v21.8 Reliability Core baseline:
+Recovery strategy:
+- Rebuilt from v21.5 Evidence Rescue, the last hardware-confirmed musical/transport baseline (Vienna passed on the MODX M8).
+- Did NOT inherit v21.6–v21.10 cumulative experimental patches.
+- Replaced only catalogue discovery with a broader title/artist/collaboration search (up to 40 results).
+- Fixed the latent hasKey runtime exception in the build path.
+- Added a zero-parts stop: PatchMaster must not jump to SEND with an empty blueprint.
+- A one-Part researched rig is full keyboard range A0–C8 to avoid apparent silence from role splits.
+- Yamaha PREP/PLAYABLE transaction and PM_ALLOW remain from v21.5.
+- Bulk-memory writes remain blocked.
 
-1. SINGLE-PART PLAYABILITY
-   If research produces only one Part, its keyboard range is now A0–C8 regardless of musical role.
-   Previously a lone lead could be restricted to C5–C8, which can look like a completely silent Performance when played in the normal register.
-
-2. FINAL MODX M STATE REASSERT
-   PM_PART_PLAYABLE now reasserts BOTH Part Switch and Keyboard Control for Parts 1–8.
-   SEND calls this again after Scene writes, so the final state delivered to the keyboard is explicitly playable.
-
-3. CC127 POLY MODE
-   Yamaha-documented CC127 value 0 (Poly Mode On) is now narrowly allowed. Other CC127 values remain blocked.
-
-4. SAFETY PRESERVED
-   Bulk-memory writes remain permanently blocked.
-   Proven PREP -> per-channel Bank/Program -> PLAYABLE transaction is preserved.
-
-5. RESEARCH TRUTH
-   This build fixes the silent-SEND failure class. It does NOT claim that sparse public credits can identify every audible instrument in every recording. If You Ever has reliable public credit for Paul Gendler acoustic guitar, while public structured credits do not comprehensively document the full backing arrangement. A future audio/Research Relay layer is still required for commercial-grade reconstruction where credits are sparse.
+Important: physical MODX M validation is still required. This build is deliberately a recovery baseline, not a claim of universal song accuracy.
