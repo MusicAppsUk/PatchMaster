@@ -1,0 +1,27 @@
+PATCHMASTER v21.8 — RELIABILITY CORE
+Build date: 13 September 2026
+Baseline: v21.7 Collaboration Search Rescue
+
+PURPOSE
+Reliability update requested after the 13 September code review. No redesign of the proven MODX M transport.
+
+FIXES
+1. Removed the undefined `hasKey` reference in the post-research success path. This could throw after a successful build and make search/research appear broken.
+2. Removed Wikipedia as a hard gate. If no suitable Wikipedia song article exists, PatchMaster continues into MusicBrainz and other configured evidence sources.
+3. Replaced token-overlap corroboration with claim-specific corroboration. Two sources only count as agreeing when they resolve to the same playable patch/preset + role claim.
+4. Added negative-evidence filtering to Wikipedia instrument mining so phrases such as “no synthesizer” / “without piano” do not become positive instrument evidence.
+5. Tightened Yamaha SysEx safety: outgoing model byte must match the active detected/selected verified profile as well as the allow-listed address. Bulk-memory writes remain permanently blocked.
+6. Unified this build's visible/internal version to v21.8 / 13 Sep 2026.
+
+PRESERVED
+- Proven MODX M Part PREP -> load -> PLAYABLE transaction.
+- Performance naming.
+- Genuine Scene writes.
+- Existing regression research packets.
+- Bulk-memory write prohibition.
+- v21.7 collaboration/featured-artist catalogue search.
+
+TEST STATUS
+- Every embedded JavaScript block syntax-checked with Node.
+- Static safety assertions check bulk-memory block, PREP/PLAYABLE functions, v21.8 metadata, claim-specific corroboration, negative-evidence guard, Wikipedia non-gating, and Yamaha model-byte validation.
+- Real browser/network catalogue behaviour and physical Yamaha behaviour still require hardware/browser verification; this package does not claim those tests were run in the container.
