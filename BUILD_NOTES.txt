@@ -1,26 +1,24 @@
-PatchMaster v21.17 — Stable Catalogue Recovery
-15 Sep 2026
+PatchMaster v21.18 — Blueprint Handoff Recovery — 15 Sep 2026
 
 ROOT CAUSE FOUND
-The v21.14-v21.16 search branch generated a catalogue request storm: automatic search fired after 1.4 seconds while typing, and each search could make multiple Apple requests plus fetch→JSONP retries and MusicBrainz calls. Apple documents an approximate 20 calls/minute limit; MusicBrainz requires no more than one call/second. This could rate-limit the app until it appeared unable to find any songs.
+v21.17 catalogue search was working. The screenshot proved it returned and ranked the correct 1986 Linda Ronstadt & James Ingram recording first.
+
+The failure occurred AFTER research/build returned a valid song object and BEFORE the UI switched to Blueprint. The success-toast expression referenced an undefined JavaScript identifier named `hasKey`. `hasKey` appeared exactly once in the entire bundle and was never declared.
+
+That ReferenceError interrupted execution before the current song was set and before `t("blueprint")` could run. This exactly matches: correct recording found, but no instrument Blueprint displayed.
 
 FIX
-- Rebuilt from v21.15 research-recovery baseline, not v21.16.
-- Removed automatic network search while typing.
-- Search happens only on Enter or Search now.
-- Exactly one Apple JSONP catalogue request per explicit search.
-- MusicBrainz is a single fallback only if Apple yields no usable match.
-- 24-hour local catalogue-result cache prevents repeat requests for the same query.
-- Exact title dominates ranking; bare artist matching remains supported.
-- Supports title by artist, title - artist, title — artist, and title, artist.
-- Keeps verified local research packets as offline resilience.
-- Research pipeline retains v21.15 Wikipedia-optional repair.
-- Yamaha MIDI transport is untouched from v21.15.
+Removed the undefined `hasKey` expression from the post-research handoff. No search, research, packet, or MIDI logic was otherwise altered.
 
-REGRESSION TARGETS
-Truly -> exact title should outrank Truly Madly Deeply.
-Somewhere Out There -> exact-title recordings should be shown, including Linda Ronstadt & James Ingram when returned by catalogue.
-Gabrielle -> artist matches are eligible even when query is not a title.
-If You Ever - Gabrielle -> title+featured/collaboration identity receives combined score.
+SOMEWHERE OUT THERE
+The existing verified packet remains present and contains Finger Bass 82, Vintage Poly 86, Warm Pad 70. The packet matcher accepts the selected collaboration artist "Linda Ronstadt & James Ingram" because it contains the canonical packet artist "Linda Ronstadt".
 
-No claim of physical MODX M verification is made by this build process.
+FROZEN
+Catalogue search unchanged from v21.17.
+Research/packets unchanged from v21.17.
+PM_ALLOW, PM_PART_PREP, PM_PART_PLAYABLE byte-for-byte identical to v21.17.
+Bulk-memory writes permanently blocked.
+
+CHECKS
+All 4 embedded JavaScript blocks pass Node syntax checking.
+No `hasKey` reference remains.
