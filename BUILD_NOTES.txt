@@ -1,13 +1,16 @@
-PatchMaster v21.11 — STABLE REBUILD — 13 Sep 2026
+PatchMaster v21.16 — Federated Recording Recovery — 15 Sep 2026
 
-Recovery strategy:
-- Rebuilt from v21.5 Evidence Rescue, the last hardware-confirmed musical/transport baseline (Vienna passed on the MODX M8).
-- Did NOT inherit v21.6–v21.10 cumulative experimental patches.
-- Replaced only catalogue discovery with a broader title/artist/collaboration search (up to 40 results).
-- Fixed the latent hasKey runtime exception in the build path.
-- Added a zero-parts stop: PatchMaster must not jump to SEND with an empty blueprint.
-- A one-Part researched rig is full keyboard range A0–C8 to avoid apparent silence from role splits.
-- Yamaha PREP/PLAYABLE transaction and PM_ALLOW remain from v21.5.
-- Bulk-memory writes remain blocked.
+ROOT CAUSE / RECOVERY
+- v21.15 could still depend on Apple/iTunes returning a usable catalogue row before a recording became selectable.
+- A real recording can therefore exist in MusicBrainz and PatchMaster research packets yet appear unrecognised when the Apple path fails or ranks poorly.
 
-Important: physical MODX M validation is still required. This build is deliberately a recovery baseline, not a claim of universal song accuracy.
+CHANGES
+- Recording search is now federated: Apple Music + MusicBrainz + verified PatchMaster research packets.
+- MusicBrainz is now a first-class title/artist recording resolver, not only an artist-catalogue fallback.
+- Exact title score raised to dominate title expansions/covers with longer names.
+- Verified research packets provide offline resilience for already-researched exact recordings.
+- Search still requires user selection before research/build.
+- Research and MODX M transport are otherwise inherited from v21.15.
+
+REGRESSION CASE
+- Somewhere Out There — Linda Ronstadt / James Ingram must be discoverable. It is present in MusicBrainz and the existing verified PatchMaster research packet.
