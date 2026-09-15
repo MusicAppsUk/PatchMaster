@@ -1,24 +1,10 @@
-PatchMaster v21.18 — Blueprint Handoff Recovery — 15 Sep 2026
+PatchMaster v21.19 — Tonight Research Recovery — 15 Sep 2026
 
-ROOT CAUSE FOUND
-v21.17 catalogue search was working. The screenshot proved it returned and ranked the correct 1986 Linda Ronstadt & James Ingram recording first.
-
-The failure occurred AFTER research/build returned a valid song object and BEFORE the UI switched to Blueprint. The success-toast expression referenced an undefined JavaScript identifier named `hasKey`. `hasKey` appeared exactly once in the entire bundle and was never declared.
-
-That ReferenceError interrupted execution before the current song was set and before `t("blueprint")` could run. This exactly matches: correct recording found, but no instrument Blueprint displayed.
-
-FIX
-Removed the undefined `hasKey` expression from the post-research handoff. No search, research, packet, or MIDI logic was otherwise altered.
-
-SOMEWHERE OUT THERE
-The existing verified packet remains present and contains Finger Bass 82, Vintage Poly 86, Warm Pad 70. The packet matcher accepts the selected collaboration artist "Linda Ronstadt & James Ingram" because it contains the canonical packet artist "Linda Ronstadt".
-
-FROZEN
-Catalogue search unchanged from v21.17.
-Research/packets unchanged from v21.17.
-PM_ALLOW, PM_PART_PREP, PM_PART_PLAYABLE byte-for-byte identical to v21.17.
-Bulk-memory writes permanently blocked.
-
-CHECKS
-All 4 embedded JavaScript blocks pass Node syntax checking.
-No `hasKey` reference remains.
+Built directly from v21.18.
+Scope deliberately narrow to avoid regression.
+- Search/catalogue code unchanged.
+- MODX M transport unchanged.
+- General research engine unchanged.
+- Added a verified research packet for Tonight, I Celebrate My Love — Roberta Flack & Peabo Bryson (1983).
+- Packet uses track-specific documented piano, bass, guitar and orchestration evidence.
+- No unsupported synthesizer model is claimed.
