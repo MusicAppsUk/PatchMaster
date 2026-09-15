@@ -1,16 +1,26 @@
-PatchMaster v21.16 — Federated Recording Recovery — 15 Sep 2026
+PatchMaster v21.17 — Stable Catalogue Recovery
+15 Sep 2026
 
-ROOT CAUSE / RECOVERY
-- v21.15 could still depend on Apple/iTunes returning a usable catalogue row before a recording became selectable.
-- A real recording can therefore exist in MusicBrainz and PatchMaster research packets yet appear unrecognised when the Apple path fails or ranks poorly.
+ROOT CAUSE FOUND
+The v21.14-v21.16 search branch generated a catalogue request storm: automatic search fired after 1.4 seconds while typing, and each search could make multiple Apple requests plus fetch→JSONP retries and MusicBrainz calls. Apple documents an approximate 20 calls/minute limit; MusicBrainz requires no more than one call/second. This could rate-limit the app until it appeared unable to find any songs.
 
-CHANGES
-- Recording search is now federated: Apple Music + MusicBrainz + verified PatchMaster research packets.
-- MusicBrainz is now a first-class title/artist recording resolver, not only an artist-catalogue fallback.
-- Exact title score raised to dominate title expansions/covers with longer names.
-- Verified research packets provide offline resilience for already-researched exact recordings.
-- Search still requires user selection before research/build.
-- Research and MODX M transport are otherwise inherited from v21.15.
+FIX
+- Rebuilt from v21.15 research-recovery baseline, not v21.16.
+- Removed automatic network search while typing.
+- Search happens only on Enter or Search now.
+- Exactly one Apple JSONP catalogue request per explicit search.
+- MusicBrainz is a single fallback only if Apple yields no usable match.
+- 24-hour local catalogue-result cache prevents repeat requests for the same query.
+- Exact title dominates ranking; bare artist matching remains supported.
+- Supports title by artist, title - artist, title — artist, and title, artist.
+- Keeps verified local research packets as offline resilience.
+- Research pipeline retains v21.15 Wikipedia-optional repair.
+- Yamaha MIDI transport is untouched from v21.15.
 
-REGRESSION CASE
-- Somewhere Out There — Linda Ronstadt / James Ingram must be discoverable. It is present in MusicBrainz and the existing verified PatchMaster research packet.
+REGRESSION TARGETS
+Truly -> exact title should outrank Truly Madly Deeply.
+Somewhere Out There -> exact-title recordings should be shown, including Linda Ronstadt & James Ingram when returned by catalogue.
+Gabrielle -> artist matches are eligible even when query is not a title.
+If You Ever - Gabrielle -> title+featured/collaboration identity receives combined score.
+
+No claim of physical MODX M verification is made by this build process.
