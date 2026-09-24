@@ -117,6 +117,11 @@ const midiName=v=>String(v||'').trim();
 const looksPreferred=name=>/\b(MODX|MONTAGE|YAMAHA)\b/i.test(name);
 const portScore=port=>{const name=midiName(port?.name);return (/\bMODX\b/i.test(name)?100:/\bMONTAGE\b/i.test(name)?80:/\bYAMAHA\b/i.test(name)?60:0)+(port?.state==='connected'?10:0);};
 const choosePort=ports=>[...ports].filter(p=>p&&p.state!=='disconnected').sort((a,b)=>portScore(b)-portScore(a)||midiName(a.name).localeCompare(midiName(b.name)))[0]||null;
+const midiPortKey=port=>port?[
+ String(port.type||''),String(port.id||''),midiName(port.manufacturer),midiName(port.name)
+].join('|'):'';
+const sameMidiPort=(a,b)=>a===b||Boolean(a&&b&&midiPortKey(a)===midiPortKey(b));
+
 
 const modxMFamilies=new Map([
  ['110,6','MODX M6'],
@@ -204,11 +209,14 @@ class BrowserMidiTransport{
   const outputs=[...this.#access.outputs.values()];const inputs=[...this.#access.inputs.values()];
   const nextOutput=choosePort(outputs);let nextInput=null;
   if(nextOutput){const family=midiName(nextOutput.name).replace(/\b(MIDI|OUT|IN|PORT|DAW)\b/ig,' ').replace(/\s+/g,' ').trim();nextInput=inputs.filter(p=>{const n=midiName(p.name);return family&&n.toLowerCase().includes(family.toLowerCase());}).sort((a,b)=>portScore(b)-portScore(a))[0]||choosePort(inputs);}else nextInput=choosePort(inputs);
-  const changed=this.#output!==nextOutput||this.#input!==nextInput;
-  if(this.#output&&this.#output!==nextOutput&&typeof this.#output.close==='function')try{await this.#output.close();}catch{}
-  if(this.#input&&this.#input!==nextInput){try{this.#input.onmidimessage=null;}catch{}if(typeof this.#input.close==='function')try{await this.#input.close();}catch{}}
+  const outputChanged=!sameMidiPort(this.#output,nextOutput),inputChanged=!sameMidiPort(this.#input,nextInput),changed=outputChanged||inputChanged;
+  if(this.#output&&outputChanged&&typeof this.#output.close==='function')try{await this.#output.close();}catch{}
+  if(this.#input&&inputChanged){try{this.#input.onmidimessage=null;}catch{}if(typeof this.#input.close==='function')try{await this.#input.close();}catch{}}
   this.#output=nextOutput;this.#input=nextInput;
-  if(changed){this.#identity=null;this.#parameterSafeAfter=Date.now()+this.#readbackGuardMs;}
+  // Chromium/Android may hand back new MIDIPort wrapper objects for the same physical port.
+  // Preserve verified identity across that harmless refresh. A genuine disconnect explicitly
+  // invalidates identity in the statechange handler below.
+  if(changed)this.#parameterSafeAfter=Date.now()+this.#readbackGuardMs;
   if(this.#output&&typeof this.#output.open==='function')try{await this.#output.open();}catch{this.#output=null;}
   if(this.#input&&typeof this.#input.open==='function')try{await this.#input.open();this.#input.onmidimessage=this.#handleMessage;}catch{this.#input=null;}
   return this.#emit();
@@ -230,7 +238,13 @@ class BrowserMidiTransport{
    try{this.#access=await this.#navigator.requestMIDIAccess({sysex:false});}
    catch(fallbackError){this.#access=null;this.#input=null;this.#output=null;const state=this.#emit();return {...state,error:midiName(fallbackError?.message)||sysexError||'MIDI access was not granted.'};}
   }
-  this.#access.onstatechange=()=>{void this.#refresh();};
+  this.#access.onstatechange=event=>{
+   if(event?.port?.state==='disconnected'){
+    this.#identity=null;this.#parameterSafeAfter=Date.now()+this.#readbackGuardMs;
+    for(const waiter of [...this.#parameterWaiters])try{waiter.finish(null);}catch{}
+   }
+   void this.#refresh();
+  };
   let state=await this.#refresh();
   // Android/Chromium may expose the USB MIDI ports a fraction after permission resolves.
   // Give a freshly re-plugged keyboard a bounded chance to appear before declaring failure.
@@ -1936,14 +1950,15 @@ const instruments = [
  ['wurlitzer','Wurlitzer electric piano',/\bwurlitzer\b/i,'Keyboard','Electric Piano','keys',/\bwr\b|wurl/i],
  ['electric-piano','Electric piano',/\belectric piano\b/i,'Keyboard','Electric Piano','keys',/electric|\brd\b|\bwr\b/i],
  ['piano','Acoustic piano',/\b(piano|grand piano)\b/i,'Piano','Acoustic','keys',/CFX Concert|CFX Stage/i],
+ ['keyboard','Keyboard',/\bkeyboards?\b/i,null,null,'keys',/(?!)/],
  ['farfisa-organ','Farfisa combo organ',/\bfarfisa(?: organ)?\b/i,'Organ','Combo','keys',/combo organ|\b1972\b/i],
  ['vox-organ','Vox combo organ',/\bvox(?: continental)?(?: organ)?\b/i,'Organ','Combo','keys',/combo organ|\b1972\b/i],
  ['hammond-organ','Hammond tonewheel organ',/\b(?:hammond|tonewheel)(?: organ)?\b/i,'Organ','Tone Wheel','keys',/All 9 Bars|Jazz|ToneWheel|Bars/i],
  ['pipe-organ','Pipe organ',/\b(?:pipe|church|cathedral) organ\b/i,'Organ','Pipe','keys',/Cathedral|Church|Pipe/i],
  ['organ','Organ',/\borgan\b/i,'Organ',null,'keys',/All 9 Bars|Jazz|ToneWheel/i],
  ['mellotron','Mellotron texture',/\bmellotron\b/i,'Strings',null,'keys',/tron|tape/i],
- ['synth-bass','Synth bass',/\b(?:(?:synth(?:esi[sz]er)?|moog|mini ?moog) bass|bass synth(?:esi[sz]er)?)\b/i,'Bass','Synth','keys',/classic mini bass|synth bass/i],
- ['analog-poly','Analog poly synthesizer',/\b(?:roland\s+)?jupiter[- ]?(?:6|8)?\b|\b(?:oberheim|ob[- ]?(?:x|xa|8)|prophet[- ]?(?:5|10))\b/i,'Syn Comp','Analog','keys',/^Vintage Poly$/i],
+ ['synth-bass','Synth bass',/\b(?:(?:synth(?:esi[sz]er)?|moog|mini ?moog)[ -]?bass|bass[ -]?synth(?:esi[sz]er)?)\b/i,'Bass','Synth','keys',/classic mini bass|synth bass/i],
+ ['analog-poly','Analog poly synthesizer',/\b(?:roland\s+)?jupiter[- ]?(?:6|8)?\b|\b(?:oberheim|ob[- ]?(?:x|xa|8)|prophet[- ]?(?:5|10)|(?:rhodes\s+)?chroma)\b/i,'Syn Comp','Analog','keys',/^Vintage Poly$/i],
  ['orchestra-hit','Orchestra hit',/\borchestr(?:a|al)\s+(?:hits?|stabs?)\b/i,'Musical FX','Hit','keys',/^Orchestra Hit$/i],
  ['choir','Choir layer',/\b(?:choirs?|choral|choir sound|sung mass|amen response)\b/i,'Pad/Choir','Choir','keys',/^Film Choir$/i],
  ['synth','Synthesizer',/\b(synthesi[sz]ers?|synth|moog|arp odyssey|prophet|jupiter|dx7|fairlight)\b/i,'Syn Lead',null,'keys',/mini|analog/i],
@@ -1964,7 +1979,9 @@ const instruments = [
  ['marimba','Marimba',/\bmarimbas?\b/i,'Chromatic Perc','Mallet','keys',/marimba/i],
  ['bird','Bird sound effect',/\b(birdsong|bird song|bird calls?|bird sounds?|birds chirping)\b/i,'Sound FX',null,'effect',/bird|tweet|chirp/i],
  ['whistle','Whistle',/\b(whistling|whistle)\b/i,null,null,'effect',/whistl/i],
- ['bass','Bass',/\b(bass guitar|double bass|upright bass|electric bass|bass)\b/i,'Bass',null,'rhythm',/finger|acoustic|upright/i],
+ ['electric-bass','Electric bass',/\b(?:bass guitar|electric bass|bassist|bass[- ]player)\b/i,'Bass','Electric','rhythm',/finger|prec|round wound|vintage jb|electric bass/i],
+ ['upright-bass','Upright bass',/\b(?:double bass|upright bass|acoustic bass)\b/i,'Bass','Acoustic','rhythm',/upright bass/i],
+ ['bass','Bass',/\bbass\b/i,'Bass',null,'rhythm',/finger|acoustic|upright/i],
  ['guitar','Guitar',/\bguitars?\b/i,'Guitar',null,'rhythm',/steel|clean|nylon/i],
  ['drums','Drums and percussion',/\b(drums|drumming|percussion|tambourine|congas)\b/i,'Drum / Perc',null,'rhythm',/standard|studio/i]
 ].map(([id,name,pattern,category,subcategory,group,preferred])=>({id,name,pattern,category,subcategory,group,preferred}));
@@ -2053,15 +2070,21 @@ function proposeRoles(recording,article){
   if(excluded||/\b(disputed|dispute|claimed|alleged|controversy)\b/i.test(line))continue;
   for(const sentence of line.split(/(?<=[.!?])\s+/)){
    if(sentence.length<12||sentence.length>900)continue;
-   if(/\b(no|not|never|without|while|although|instead of|unlike|rumou?r|possibly|may have|might|another song|other song|cover version|live version|live performance|later version|different album)\b/i.test(sentence))continue;
+   // Replacement phrasing carries positive evidence as well as a rejected alternative.
+   // Keep the positive clause while dropping the "instead of ..." alternative.
+   const evidenceSentence=sentence.replace(/\binstead of\b[^,;:.]*(?:[,;:.]|$)/ig,' ');
+   if(/\b(no|not|never|without|while|although|unlike|rumou?r|possibly|may have|might|another song|other song|cover version|live version|live performance|later version|different album)\b/i.test(evidenceSentence))continue;
    const personnel=/personnel|credits|musicians|instrumentation/i.test(section);
-   if(!personnel && !/\b(play(?:ed|s|ing)?|record(?:ed|ing)?|feat(?:ures?|ured|uring)|perform(?:ed|ance)?|instrumentation|overdub|track|song|arrang(?:ed|ement)|accompan|program(?:med|ming))/i.test(sentence))continue;
-   let found=instruments.filter(i=>i.pattern.test(sentence));
-   if(!/\bguitars?\b/i.test(sentence.replace(/\bbass guitar\b/gi,'')))found=found.filter(i=>i.id!=='guitar');
+   if(!personnel && !/\b(play(?:ed|s|ing)?|record(?:ed|ing)?|use(?:d|s|ing)?|feat(?:ures?|ured|uring)|perform(?:ed|ance)?|instrumentation|overdub|track|song|solos?|arrang(?:ed|ement)|accompan|program(?:med|ming))/i.test(evidenceSentence))continue;
+   const analysedSentence=evidenceSentence.replace(/[-–—]/g,' ');
+   let found=instruments.filter(i=>i.pattern.test(analysedSentence));
+   if(!/\bguitars?\b/i.test(analysedSentence.replace(/\bbass guitar\b/gi,'')))found=found.filter(i=>i.id!=='guitar');
    if(found.some(i=>['rhodes','wurlitzer','electric-piano'].includes(i.id)))found=found.filter(i=>i.id!=='piano');
    if(found.some(i=>['rhodes','wurlitzer'].includes(i.id)))found=found.filter(i=>i.id!=='electric-piano');
    if(found.some(i=>i.id==='synth-bass'))found=found.filter(i=>!['synth','bass'].includes(i.id));
+   if(found.some(i=>['electric-bass','upright-bass'].includes(i.id)))found=found.filter(i=>i.id!=='bass');
    if(found.some(i=>i.id==='analog-poly'))found=found.filter(i=>i.id!=='synth');
+   if(found.some(i=>['clavinet','rhodes','wurlitzer','electric-piano','piano','farfisa-organ','vox-organ','hammond-organ','pipe-organ','organ','analog-poly','synth'].includes(i.id)))found=found.filter(i=>i.id!=='keyboard');
    if(found.some(i=>i.id==='orchestra-hit'))found=found.filter(i=>i.id!=='strings');
    if(found.some(i=>['tenor-sax','alto-sax'].includes(i.id)))found=found.filter(i=>i.id!=='sax');
    if(found.some(i=>i.id==='harpsichord'))found=found.filter(i=>i.id!=='clavinet');
@@ -2071,7 +2094,11 @@ function proposeRoles(recording,article){
    }
   }
  }
- return [...roles.values()];
+ const resolved=[...roles.values()];
+ const hasSpecificBass=resolved.some(r=>['synth-bass','electric-bass','upright-bass'].includes(r.instrumentId));
+ const hasSpecificKeys=resolved.some(r=>['clavinet','rhodes','wurlitzer','electric-piano','piano','farfisa-organ','vox-organ','hammond-organ','pipe-organ','organ','analog-poly','synth'].includes(r.instrumentId));
+ const hasSpecificSax=resolved.some(r=>['tenor-sax','alto-sax'].includes(r.instrumentId));
+ return resolved.filter(r=>!(hasSpecificBass&&r.instrumentId==='bass')&&!(hasSpecificKeys&&r.instrumentId==='keyboard')&&!(hasSpecificSax&&r.instrumentId==='sax'));
 }
 function rolesForMode(roles,mode){
  return roles.map(r=>({...r,enabled:typeof r.enabledOverride==='boolean'?r.enabledOverride:mode==='SOLO'||(mode==='KEYS_ONLY'?r.group==='keys':r.group!=='rhythm')}));
@@ -3512,13 +3539,20 @@ function renderArrangementStatus(){
 }
 $('favourite').onchange=()=>{if(!plan)return;plan.favourite=$('favourite').checked;changed();};
 function splitDeploymentValidationProblems(problems=[]){const unresolved=problems.filter(p=>/^No sound selected for /.test(p)),blocking=problems.filter(p=>!/^No sound selected for /.test(p));return {unresolved,blocking};}
-$('prepareFlow').onclick=()=>{if(!plan)return;const pipeline=runProductionPipeline(plan);const ready=pipeline.gates.BUILD&&pipeline.gates.SIMULATE;if(ready&&midiState.identity?.verified)message('Automatic preparation checks pass. SEND can load the selected Part set into the verified MODX M edit buffer; nothing will be Stored.');else if(ready)message('Automatic preparation checks pass. Identify the MODX M in Test Centre before SEND can load the Part set.');else {const {unresolved,blocking}=splitDeploymentValidationProblems(pipeline.validation?.problems||[]);if(!blocking.length&&unresolved.length){const names=unresolved.map(x=>x.replace(/^No sound selected for /,'').replace(/\.$/,'')).join(', ');message(`${plan.recording.title}: automatic preparation is usable but partial. ${names} remains unresolved and will be omitted rather than guessed. SEND can load the resolved Parts once the MODX M is verified.`);}else message(`${plan.recording.title}: ${blocking[0]||pipeline.validation?.problems?.[0]||'automatic preparation is incomplete.'} Open Fine Adjust to review the draft.`);}renderArrangementStatus();};
+$('prepareFlow').onclick=()=>{if(!plan)return;const pipeline=runProductionPipeline(plan);const ready=pipeline.gates.BUILD&&pipeline.gates.SIMULATE;if(ready&&midiState.identity?.verified)message('Automatic preparation checks pass. SEND can load the selected Part set into the verified MODX M edit buffer; nothing will be Stored.');else if(ready)message('Automatic preparation checks pass. SEND will verify the connected MODX M automatically before loading the Part set.');else {const {unresolved,blocking}=splitDeploymentValidationProblems(pipeline.validation?.problems||[]);if(!blocking.length&&unresolved.length){const names=unresolved.map(x=>x.replace(/^No sound selected for /,'').replace(/\.$/,'')).join(', ');message(`${plan.recording.title}: automatic preparation is usable but partial. ${names} remains unresolved and will be omitted rather than guessed. SEND can load the resolved Parts once the MODX M is verified.`);}else message(`${plan.recording.title}: ${blocking[0]||pipeline.validation?.problems?.[0]||'automatic preparation is incomplete.'} Open Fine Adjust to review the draft.`);}renderArrangementStatus();};
 $('sendFlow').onclick=async()=>{
  if(!plan)return;
  const draft=validateArrangement(plan),{unresolved,blocking}=splitDeploymentValidationProblems(draft.problems);
  if(blocking.length){message(`Send blocked: ${blocking[0]||'the arrangement is incomplete.'}`);renderArrangementStatus();return;}
- if(!midiState.identity?.verified){message('Send blocked: identify the MODX M in Test Centre first.');return;}
- const deployment=buildModxMPartDeployment(plan,catalogue,{allowUnresolved:true,targetModel:midiState.identity?.model||'M8',liveLayerMix:true});
+ let sendIdentity=midiState.identity;
+ if(!sendIdentity?.verified){
+  if(!midiState.connected){message('Send blocked: connect the MODX M first.');return;}
+  message('Checking the connected MODX M…');
+  const checked=await midiTransport.identify({timeoutMs:2400});renderMidiState(checked);syncDeviceSessionFromMidi(checked);
+  sendIdentity=checked.identity;
+  if(!sendIdentity?.verified){message(`Send blocked: ${checked.error||'the connected keyboard could not be verified as a MODX M.'}`);return;}
+ }
+ const deployment=buildModxMPartDeployment(plan,catalogue,{allowUnresolved:true,targetModel:sendIdentity?.model||'M8',liveLayerMix:true});
  if(!deployment.ready){message(`Send blocked: ${deployment.problems[0]||'the MODX M Part deployment is incomplete.'}`);return;}
  const summary=deployment.assignments.map(a=>`Part ${a.slot}: ${a.roleName} → source Performance ${a.performanceName} · full range · source-Part identity not yet proven`).join('\n');
  const omitted=deployment.omitted.length?`\n\nOMITTED (unresolved, not guessed):\n${deployment.omitted.map(x=>x.roleName).join('\n')}`:'';
